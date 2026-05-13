@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KBOSTOCK — KBO 가상 주식 거래소</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080C18;--bg2:#0D1628;--bg3:#111E35;
+  --border:#1A2D4A;--gold:#F0B429;
+  --green:#0EE07A;--red:#FF3B56;
+  --text:#E2E8F7;--muted:#64748B;--r:12px;
+}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Noto Sans KR',sans-serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+.bebas{font-family:'Bebas Neue',sans-serif}
+.g{color:var(--green)}.r{color:var(--red)}.gold{color:var(--gold)}.mu{color:var(--muted)}
+
+/* ticker */
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-wrap{overflow:hidden;background:#060A15;border-bottom:1px solid var(--border);height:30px;display:flex;align-items:center}
+.ticker-track{display:flex;animation:tick 40s linear infinite;white-space:nowrap;font-size:11px;color:var(--muted)}
+
+/* header */
+.hdr{background:rgba(8,12,24,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:58px;position:sticky;top:0;z-index:100}
+.logo{font-family:'Bebas Neue';font-size:26px;color:var(--gold);letter-spacing:3px;cursor:pointer;flex-shrink:0}
+.logo span{color:rgba(255,255,255,.6)}
+.nav{display:flex;gap:2px;flex:1;justify-content:center}
+.nb{background:none;border:none;color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR';font-weight:500;transition:.15s;white-space:nowrap}
+.nb:hover{color:var(--text);background:var(--bg3)}
+.nb.on{color:var(--gold);background:rgba(240,180,41,.1)}
+.ua{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.chip{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;text-align:right}
+.lbtn{background:var(--gold);color:#000;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-weight:900;font-size:13px;font-family:'Noto Sans KR';transition:.15s}
+.lbtn:hover{background:#e8a820}
+.obtn{background:var(--bg3);color:var(--muted);border:1px solid var(--border);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR'}
+
+/* status */
+.sbar{text-align:center;padding:9px;font-size:12px;font-weight:700;letter-spacing:1px}
+.sopen{background:rgba(14,224,122,.07);color:var(--green);border-bottom:1px solid rgba(14,224,122,.15)}
+.sclosed{background:rgba(255,59,86,.06);color:#FF6B81;border-bottom:1px solid rgba(255,59,86,.12)}
+
+/* main */
+.main{max-width:1160px;margin:0 auto;padding:24px 20px}
+.stitle{font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.stitle::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* cards */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:15px;transition:.2s}
+.tc:hover{border-color:#2A4A72;transform:translateY(-1px)}
+.th{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.tn{font-size:12px;font-weight:700;line-height:1.3}
+.trank{font-size:10px;color:var(--muted);margin-top:2px}
+.price{font-family:'IBM Plex Mono';font-size:21px;font-weight:600}
+.chg{font-family:'IBM Plex Mono';font-size:12px;font-weight:600}
+.rbadge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:'IBM Plex Mono'}
+.ru{background:rgba(14,224,122,.13);color:var(--green)}
+.rd{background:rgba(255,59,86,.13);color:var(--red)}
+.req{background:var(--bg3);color:var(--muted)}
+.trow{display:flex;gap:7px;margin-top:11px}
+.bbtn{flex:1;background:rgba(14,224,122,.12);color:var(--green);border:1px solid rgba(14,224,122,.25);padding:8px;border-radius:8px;cursor:pointer;font-weight:700;font-size:12px;font-family:'Noto Sans KR';transition:.15s}
+.bbtn:hover{background:rgba(14,224,122,.22)}
+.sbtn{flex:1;background:rgba(255,59,86,.1);color:var(--red);border:1px solid rgba(255,59,86,.22);padding:8px;border-radius:8px;cursor:pointer;font-weight:700;font-size:12px;font-family:'Noto Sans KR';transition:.15s}
+.sbtn:hover{background:rgba(255,59,86,.2)}
+.dis{opacity:.35;cursor:not-allowed!important}
+.hbadge{display:inline-block;background:rgba(240,180,41,.15);color:var(--gold);font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:5px;vertical-align:middle}
+
+/* overlay + modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#0B1525;border:1px solid var(--border);border-radius:16px;padding:26px;width:100%;max-width:400px}
+.mtitle{font-family:'Bebas Neue';font-size:22px;letter-spacing:2px;margin-bottom:18px;color:var(--gold)}
+.tabsw{display:flex;gap:6px;margin-bottom:18px}
+.tabsw button{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:8px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Noto Sans KR';transition:.15s}
+.tabsw button.on{background:rgba(240,180,41,.12);border-color:rgba(240,180,41,.3);color:var(--gold)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:8px;font-size:13px;font-family:'Noto Sans KR';outline:none;transition:.15s}
+.field input:focus{border-color:var(--gold)}
+.sbmit{width:100%;background:var(--gold);color:#000;border:none;padding:12px;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Noto Sans KR';margin-top:6px;transition:.15s}
+.sbmit:hover{background:#e8a820}
+.clsbtn{width:100%;background:none;border:none;color:var(--muted);cursor:pointer;margin-top:10px;font-size:12px;font-family:'Noto Sans KR';padding:6px}
+.qrow{display:flex;gap:7px;align-items:center;margin-top:6px}
+.qbtn{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:7px;cursor:pointer;font-size:18px;flex-shrink:0}
+.qinp{flex:1;text-align:center;font-family:'IBM Plex Mono';font-weight:700;font-size:20px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:8px;outline:none}
+.maxbtn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:0 10px;height:34px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Noto Sans KR';flex-shrink:0}
+.infobox{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:13px;margin:14px 0}
+.irow{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
+.irow:last-child{margin-bottom:0}
+
+/* portfolio */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
+.pcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px}
+.plbl{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:5px;letter-spacing:.5px}
+.pval{font-family:'IBM Plex Mono';font-size:17px;font-weight:600}
+.cwrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ptbl{width:100%;border-collapse:collapse}
+.ptbl th{font-size:10px;color:var(--muted);font-weight:600;padding:9px 12px;text-align:right;border-bottom:1px solid var(--border);letter-spacing:.5px}
+.ptbl th:first-child{text-align:left}
+.ptbl td{padding:11px 12px;border-bottom:1px solid rgba(26,45,74,.5);font-size:12px;text-align:right;vertical-align:middle}
+.ptbl td:first-child{text-align:left}
+.ptbl tr:last-child td{border-bottom:none}
+.ptbl tr:hover td{background:var(--bg3)}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+
+/* leaderboard */
+.lbrow{display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid rgba(26,45,74,.5)}
+.lbrow:last-child{border-bottom:none}
+.lbrank{font-family:'Bebas Neue';font-size:22px;width:38px;text-align:center}
+.lbnick{flex:1;font-weight:700;font-size:13px}
+.lbasset{font-family:'IBM Plex Mono';font-size:13px;font-weight:600;text-align:right}
+.lbret{font-family:'IBM Plex Mono';font-size:11px;text-align:right;min-width:65px}
+.m1{color:#FFD700}.m2{color:#C0C0C0}.m3{color:#CD7F32}
+.lbme{background:rgba(240,180,41,.07);border-radius:8px}
+
+/* schedule */
+.sgrow{display:flex;align-items:center;gap:12px;padding:11px 15px;border-bottom:1px solid rgba(26,45,74,.5);font-size:12px}
+.sgrow:last-child{border-bottom:none}
+.sdate{color:var(--muted);font-size:10px;min-width:65px;font-weight:600}
+.smatch{flex:1;display:flex;align-items:center;gap:7px;font-weight:700}
+.svs{color:var(--muted);font-size:10px}
+.stime{color:var(--muted);font-size:10px;min-width:40px;text-align:right;font-family:'IBM Plex Mono'}
+.svenue{color:var(--muted);font-size:10px;min-width:150px;text-align:right}
+.dhead{font-size:11px;color:var(--gold);font-weight:700;padding:7px 15px;background:rgba(240,180,41,.06);border:1px solid rgba(240,180,41,.12);border-radius:8px 8px 0 0;border-bottom:none}
+
+/* predictions */
+.pgd{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.prd{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.pbadge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:9px}
+.pcmt{font-size:12px;color:#94A3B8;line-height:1.7;margin-top:6px}
+
+/* admin */
+.agd{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.ac{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.ag3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:9px}
+.ainp{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;width:100%;font-family:'IBM Plex Mono';outline:none}
+.ainp:focus{border-color:var(--gold)}
+.ainplbl{font-size:9px;color:var(--muted);margin-bottom:3px;font-weight:700;letter-spacing:.3px}
+.updBtn{background:rgba(240,180,41,.12);color:var(--gold);border:1px solid rgba(240,180,41,.25);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:'Noto Sans KR';transition:.15s;white-space:nowrap}
+.updBtn:hover{background:rgba(240,180,41,.22)}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0B1525;border:1px solid var(--border);border-radius:12px;padding:12px 22px;font-size:13px;z-index:2000;white-space:nowrap;pointer-events:none}
+.tok{border-color:rgba(14,224,122,.35);color:var(--green)}
+.terr{border-color:rgba(255,59,86,.35);color:var(--red)}
+
+/* alert box */
+.alert{border-radius:9px;padding:11px 15px;font-size:12px;margin-bottom:14px;display:flex;align-items:center;gap:8px;line-height:1.5}
+.alertw{background:rgba(255,59,86,.07);border:1px solid rgba(255,59,86,.18);color:#FF8A9A}
+.alerti{background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.15);color:#B8944E}
+
+@media(max-width:768px){
+  .hdr{padding:0 14px;gap:10px}
+  .nav{gap:1px}
+  .nb{padding:5px 7px;font-size:10px}
+  .main{padding:16px 14px}
+  .tgrid{grid-template-columns:repeat(2,1fr)}
+  .pgrid{grid-template-columns:repeat(2,1fr)}
+  .ua .chip{display:none}
+  .svenue{display:none}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo,useEffect} = React;
+const IC = 3_000_000;
+const APW = "kbostock2026";
+
+const TEAMS=[
+  {id:'KIA',    name:'KIA 타이거즈',  s:'KIA', c:'#E30613', e:'🐯'},
+  {id:'LG',     name:'LG 트윈스',     s:'LG',  c:'#C8102E', e:'⚡'},
+  {id:'DOOSAN', name:'두산 베어스',   s:'OB',  c:'#4472C4', e:'🐻'},
+  {id:'KT',     name:'KT 위즈',       s:'KT',  c:'#A50034', e:'🧙'},
+  {id:'SSG',    name:'SSG 랜더스',    s:'SSG', c:'#CE0E2D', e:'⚔️'},
+  {id:'LOTTE',  name:'롯데 자이언츠', s:'LOT', c:'#002856', e:'🌊'},
+  {id:'SAM',    name:'삼성 라이온즈', s:'SAM', c:'#1428A0', e:'🦁'},
+  {id:'HAN',    name:'한화 이글스',   s:'HAN', c:'#FF6600', e:'🦅'},
+  {id:'NC',     name:'NC 다이노스',   s:'NC',  c:'#315288', e:'🦕'},
+  {id:'KIW',    name:'키움 히어로즈', s:'KIW', c:'#820024', e:'💎'},
+];
+
+const S0={
+  KIA:  {price:87000, prev:80000, rank:1,  pr:2,  rec:'4승1패', ch: 8.75},
+  LG:   {price:73000, prev:76000, rank:2,  pr:1,  rec:'3승2패', ch:-3.95},
+  DOOSAN:{price:61000,prev:58000, rank:3,  pr:5,  rec:'3승1패', ch: 5.17},
+  KT:   {price:64000, prev:66000, rank:4,  pr:3,  rec:'2승2패', ch:-3.03},
+  SSG:  {price:70000, prev:69000, rank:5,  pr:4,  rec:'2승2패', ch: 1.45},
+  LOTTE:{price:42000, prev:44000, rank:6,  pr:7,  rec:'2승3패', ch:-4.55},
+  SAM:  {price:55000, prev:52000, rank:7,  pr:6,  rec:'2승3패', ch: 5.77},
+  HAN:  {price:38000, prev:41000, rank:8,  pr:8,  rec:'1승4패', ch:-7.32},
+  NC:   {price:47000, prev:45000, rank:9,  pr:10, rec:'1승2패', ch: 4.44},
+  KIW:  {price:32000, prev:35000, rank:10, pr:9,  rec:'0승5패', ch:-8.57},
+};
+
+const PREDS={
+  KIA:  {lbl:'황제주',   em:'👑', col:'#FFD700', cmt:'리그 최강자. 꾸준한 우상향 기대!'},
+  LG:   {lbl:'블루칩',   em:'💙', col:'#4FC3F7', cmt:'안정적 강팀. 장기 보유 추천.'},
+  DOOSAN:{lbl:'반등주',  em:'📈', col:'#69F0AE', cmt:'전통 강호의 재도약! 매수 타이밍.'},
+  KT:   {lbl:'관망주',   em:'👀', col:'#FFF176', cmt:'등락 반복. 단기 트레이딩 주의.'},
+  SSG:  {lbl:'안정주',   em:'🛡️', col:'#80DEEA', cmt:'중위권 꾸준. 리스크 낮은 안전 자산.'},
+  LOTTE:{lbl:'실망주',   em:'🙏', col:'#FFAB91', cmt:'팬심으로 버티는 구단... 기도만이 답.'},
+  SAM:  {lbl:'저평가주', em:'💡', col:'#CE93D8', cmt:'잠재력 있음. 반등 시 수익 폭발 기대.'},
+  HAN:  {lbl:'고위험주', em:'🎢', col:'#FF8A65', cmt:'롤러코스터 예상. 심장 튼튼한 분만.'},
+  NC:   {lbl:'회복세',   em:'🌱', col:'#A5D6A7', cmt:'서서히 살아나는 중. 눈여겨볼 것!'},
+  KIW:  {lbl:'상폐위기', em:'🚨', col:'#EF9A9A', cmt:'최하위 쟁탈 중... 분산투자 강력 권장.'},
+};
+
+const SCH=[
+  {d:'5/12(월)',h:'KIA',  a:'LG',     t:'18:30',v:'광주-기아 챔피언스 필드'},
+  {d:'5/12(월)',h:'SAM',  a:'NC',     t:'18:30',v:'대구 삼성 라이온즈 파크'},
+  {d:'5/12(월)',h:'LOTTE',a:'HAN',    t:'18:30',v:'사직 야구장'},
+  {d:'5/12(월)',h:'KT',   a:'KIW',    t:'18:30',v:'수원 KT 위즈 파크'},
+  {d:'5/12(월)',h:'SSG',  a:'DOOSAN', t:'18:30',v:'인천 SSG 랜더스 필드'},
+  {d:'5/13(화)',h:'LG',   a:'SAM',    t:'18:30',v:'잠실 야구장'},
+  {d:'5/13(화)',h:'DOOSAN',a:'KIA',   t:'18:30',v:'잠실 야구장'},
+  {d:'5/13(화)',h:'HAN',  a:'KT',     t:'18:30',v:'한화생명 이글스 파크'},
+  {d:'5/14(수)',h:'KIW',  a:'SSG',    t:'18:30',v:'고척 스카이돔'},
+  {d:'5/14(수)',h:'NC',   a:'LOTTE',  t:'18:30',v:'창원 NC 파크'},
+  {d:'5/15(목)',h:'KIA',  a:'SAM',    t:'18:30',v:'광주-기아 챔피언스 필드'},
+  {d:'5/15(목)',h:'DOOSAN',a:'LG',    t:'18:30',v:'잠실 야구장'},
+  {d:'5/16(금)',h:'HAN',  a:'NC',     t:'18:30',v:'한화생명 이글스 파크'},
+  {d:'5/16(금)',h:'SSG',  a:'KIW',    t:'18:30',v:'인천 SSG 랜더스 필드'},
+  {d:'5/16(금)',h:'LOTTE',a:'KT',     t:'18:30',v:'사직 야구장'},
+  {d:'5/17(토)',h:'LG',   a:'KIA',    t:'14:00',v:'잠실 야구장'},
+  {d:'5/17(토)',h:'SAM',  a:'DOOSAN', t:'14:00',v:'대구 삼성 라이온즈 파크'},
+  {d:'5/18(일)',h:'KT',   a:'SSG',    t:'14:00',v:'수원 KT 위즈 파크'},
+  {d:'5/18(일)',h:'NC',   a:'LOTTE',  t:'14:00',v:'창원 NC 파크'},
+];
+
+const LB_DEMO=[
+  {n:'야구왕KIA팬',    a:4850000,r:61.7},
+  {n:'삼성불패신화',   a:4320000,r:44.0},
+  {n:'두산베어스짱',   a:3980000,r:32.7},
+  {n:'롯데팬의눈물',   a:3650000,r:21.7},
+  {n:'한화포기안해',   a:3210000,r:7.0},
+  {n:'분산투자신봉자', a:3180000,r:6.0},
+  {n:'KT마법사',       a:3050000,r:1.7},
+  {n:'NC공룡사랑',     a:2950000,r:-1.7},
+  {n:'키움희망회로',   a:2780000,r:-7.3},
+  {n:'SSG랜더스짱',    a:2650000,r:-11.7},
+];
+
+const won=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
+const pct=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
+const gt=id=>TEAMS.find(t=>t.id===id);
+
+function calcPrice(prevP,newR,prevR,w,l){
+  const d=prevR-newR;
+  const rs=d>=3?9:d===2?6:d===1?3:d===-1?-3:d===-2?-6:d<=-3?-9:0;
+  const tot=w+l;const wr=tot>0?w/tot:0.5;
+  const ws=wr>=1?6:wr>=0.67?3:wr>=0.5?0:wr>=0.33?-3:-6;
+  return Math.max(10000,Math.round(prevP*(1+(rs+ws)/100)));
+}
+
+function Toast({t}){
+  if(!t)return null;
+  return <div className={`toast ${t.type==='err'?'terr':'tok'}`}>{t.msg}</div>;
+}
+
+function Ticker({stocks}){
+  const items=TEAMS.map(t=>{const s=stocks[t.id];return `${t.e} ${t.s}  ₩${s.price.toLocaleString()}  ${s.ch>=0?'▲':'▼'}${Math.abs(s.ch).toFixed(2)}%`;});
+  const full=[...items,...items,...items].join('   ·   ');
+  return(
+    <div className="ticker-wrap">
+      <div className="ticker-track mono"><span>{full}&nbsp;&nbsp;&nbsp;</span></div>
+    </div>
+  );
+}
+
+function Header({user,tab,setTab,onLogin,onLogout,total,ret,mopen}){
+  const tabs=[
+    {id:'market',l:'📈 마켓'},
+    {id:'portfolio',l:'💼 포트폴리오'},
+    {id:'lb',l:'🏆 순위표'},
+    {id:'sch',l:'📅 일정'},
+    {id:'pred',l:'🔮 예측'},
+    {id:'admin',l:'⚙️ 관리'},
+  ];
+  return(
+    <header className="hdr">
+      <div className="logo bebas" onClick={()=>setTab('market')}>KBO<span>STOCK</span></div>
+      <nav className="nav">
+        {tabs.map(t=>(
+          <button key={t.id} className={`nb${tab===t.id?' on':''}`} onClick={()=>setTab(t.id)}>{t.l}</button>
+        ))}
+      </nav>
+      <div className="ua">
+        {user?(
+          <>
+            <div className="chip">
+              <div style={{fontSize:9,color:'var(--muted)',fontWeight:700,letterSpacing:'.5px'}}>총 자산</div>
+              <div className="mono" style={{fontSize:12,fontWeight:700,color:ret>=0?'var(--green)':'var(--red)'}}>{won(total)}</div>
+            </div>
+            <div style={{fontSize:12,fontWeight:700,maxWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.n}</div>
+            <button className="obtn" onClick={onLogout}>나가기</button>
+          </>
+        ):(
+          <button className="lbtn" onClick={onLogin}>입장하기</button>
+        )}
+      </div>
+    </header>
+  );
+}
+
+function LoginModal({onClose,onLogin}){
+  const [mode,setMode]=useState('login');
+  const [n,setN]=useState('');
+  const [p,setP]=useState('');
+  const go=()=>{if(n.trim()&&p.trim())onLogin(n.trim(),p.trim())};
+  return(
+    <div className="ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="mtitle">⚾ KBOSTOCK</div>
+        <div className="tabsw">
+          <button className={mode==='login'?'on':''} onClick={()=>setMode('login')}>로그인</button>
+          <button className={mode==='reg'?'on':''} onClick={()=>setMode('reg')}>가입하기</button>
+        </div>
+        <div className="field">
+          <label>닉네임</label>
+          <input value={n} onChange={e=>setN(e.target.value)} placeholder="참가자 닉네임" onKeyDown={e=>e.key==='Enter'&&go()} autoFocus />
+        </div>
+        <div className="field">
+          <label>비밀번호 (숫자 4자리 권장)</label>
+          <input type="password" value={p} onChange={e=>setP(e.target.value)} placeholder="간단한 비밀번호" onKeyDown={e=>e.key==='Enter'&&go()} />
+        </div>
+        <p style={{fontSize:10,color:'var(--muted)',marginBottom:12,lineHeight:1.7}}>
+          ⚠️ 평소 사용하시는 진짜 비밀번호는 절대 입력하지 마세요. 이 사이트 전용으로만 사용하세요.
+        </p>
+        <button className="sbmit" onClick={go}>{mode==='login'?'입장하기 ⚾':'가입 & 입장하기 ⚾'}</button>
+        <button className="clsbtn" onClick={onClose}>닫기</button>
+      </div>
+    </div>
+  );
+}
+
+function TradeModal({team,stock,mode,portfolio,cash,onConfirm,onClose}){
+  const [qty,setQty]=useState(1);
+  const h=portfolio[team.id];
+  const mx=mode==='buy'?Math.floor(cash/stock.price):(h?h.shares:0);
+  const cost=stock.price*qty;
+  const profit=mode==='sell'&&h?(stock.price-h.avg)*qty:0;
+  const isBuy=mode==='buy';
+  return(
+    <div className="ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="mtitle">{team.e} {isBuy?'매수':'매도'}</div>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:14}}>
+          <span style={{color:'var(--muted)',fontSize:13}}>{team.name}</span>
+          <span className="mono" style={{fontWeight:700,fontSize:20}}>{won(stock.price)}</span>
+        </div>
+        <div style={{fontSize:11,color:'var(--muted)',display:'flex',justifyContent:'space-between',marginBottom:14}}>
+          <span>예수금 {won(cash)}</span>
+          {h&&<span>보유 {h.shares}주 | 평단 {won(h.avg)}</span>}
+        </div>
+        <div className="field">
+          <label>수량 (최대 {mx}주)</label>
+          <div className="qrow">
+            <button className="qbtn" onClick={()=>setQty(q=>Math.max(1,q-1))}>−</button>
+            <input className="qinp" type="number" min="1" max={mx} value={qty}
+              onChange={e=>setQty(Math.max(1,Math.min(mx,Number(e.target.value))))} />
+            <button className="qbtn" onClick={()=>setQty(q=>Math.min(mx,q+1))}>+</button>
+            <button className="maxbtn" onClick={()=>setQty(mx)}>MAX</button>
+          </div>
+        </div>
+        <div className="infobox">
+          <div className="irow">
+            <span style={{color:'var(--muted)'}}>주문 금액</span>
+            <span className="mono" style={{fontWeight:700,color:isBuy?'var(--red)':'var(--green)'}}>{won(cost)}</span>
+          </div>
+          {isBuy&&<div className="irow">
+            <span style={{color:'var(--muted)'}}>매수 후 예수금</span>
+            <span className="mono" style={{fontSize:12}}>{won(cash-cost)}</span>
+          </div>}
+          {!isBuy&&h&&<div className="irow">
+            <span style={{color:'var(--muted)'}}>예상 손익</span>
+            <span className="mono" style={{fontWeight:700,color:profit>=0?'var(--green)':'var(--red)'}}>
+              {won(profit)} ({pct(profit/(h.avg*qty)*100)})
+            </span>
+          </div>}
+        </div>
+        {mx===0?(
+          <div style={{textAlign:'center',color:'var(--red)',padding:'10px',fontSize:13}}>
+            {isBuy?'예수금이 부족합니다':'보유 수량이 없습니다'}
+          </div>
+        ):(
+          <button
+            className="sbmit"
+            style={!isBuy?{background:'rgba(255,59,86,.18)',color:'var(--red)',border:'1px solid rgba(255,59,86,.35)'}:{}}
+            onClick={()=>onConfirm(team.id,qty,mode)}
+          >
+            {qty}주 {isBuy?'매수':'매도'}하기
+          </button>
+        )}
+        <button className="clsbtn" onClick={onClose}>취소</button>
+      </div>
+    </div>
+  );
+}
+
+function MarketPage({stocks,portfolio,cash,user,mopen,onTrade}){
+  const sorted=[...TEAMS].sort((a,b)=>stocks[a.id].rank-stocks[b.id].rank);
+  return(
+    <div>
+      <div className="stitle bebas">🏟️ KBO STOCK MARKET</div>
+      {!mopen&&(
+        <div className="alert alertw">
+          🔒 현재 마켓이 <strong>닫혀있습니다</strong>. 매주 <strong>월요일</strong>에만 거래 가능합니다.
+        </div>
+      )}
+      {!user&&(
+        <div className="alert alerti">
+          👋 로그인 후 거래에 참여하세요! 초기 자산 <strong>₩3,000,000</strong>이 지급됩니다.
+        </div>
+      )}
+      <div className="tgrid">
+        {sorted.map(team=>{
+          const s=stocks[team.id];
+          const h=portfolio[team.id];
+          const d=s.pr-s.rank;
+          const canBuy=mopen&&user;
+          const canSell=mopen&&user&&h;
+          return(
+            <div key={team.id} className="tc">
+              <div className="th">
+                <div style={{fontSize:26}}>{team.e}</div>
+                <div style={{flex:1}}>
+                  <div className="tn">
+                    {team.name}
+                    {h&&<span className="hbadge">{h.shares}주</span>}
+                  </div>
+                  <div style={{display:'flex',gap:5,alignItems:'center',marginTop:3}}>
+                    <span style={{fontSize:9,color:'var(--muted)'}}>순위 {s.rank}위</span>
+                    <span className={`rbadge ${d>0?'ru':d<0?'rd':'req'}`}>
+                      {d>0?`▲${d}`:d<0?`▼${Math.abs(d)}`:'→'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:3}}>
+                <div className="price mono">{won(s.price)}</div>
+                <div className={`chg mono ${s.ch>=0?'g':'r'}`}>{s.ch>=0?'▲':'▼'}{Math.abs(s.ch).toFixed(2)}%</div>
+              </div>
+              <div style={{fontSize:10,color:'var(--muted)',marginBottom:2}}>주간 {s.rec}</div>
+              <div className="trow">
+                <button className={`bbtn${!canBuy?' dis':''}`} onClick={()=>canBuy&&onTrade(team,'buy')}>매수</button>
+                <button className={`sbtn${!canSell?' dis':''}`} onClick={()=>canSell&&onTrade(team,'sell')}>매도</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PortfolioPage({stocks,portfolio,cash,total,ret,user}){
+  if(!user)return<div className="empty"><div style={{fontSize:36,marginBottom:12}}>💼</div><p>로그인 후 포트폴리오를 확인하세요</p></div>;
+  const sval=total-cash;
+  return(
+    <div>
+      <div className="stitle bebas">💼 MY PORTFOLIO</div>
+      <div className="pgrid">
+        {[
+          {l:'총 자산',v:won(total),c:ret>=0?'g':'r'},
+          {l:'예수금',v:won(cash),c:''},
+          {l:'주식 평가액',v:won(sval),c:''},
+          {l:'총 수익률',v:pct(ret),c:ret>=0?'g':'r'},
+          {l:'손익금',v:won(total-IC),c:total-IC>=0?'g':'r'},
+          {l:'보유 종목',v:`${Object.keys(portfolio).length}개`,c:''},
+        ].map((x,i)=>(
+          <div key={i} className="pcard">
+            <div className="plbl">{x.l}</div>
+            <div className={`pval mono ${x.c}`}>{x.v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="stitle bebas">📊 보유 종목 상세</div>
+      {Object.keys(portfolio).length===0?(
+        <div className="empty"><div style={{fontSize:36,marginBottom:12}}>📭</div><p>보유 중인 종목이 없습니다</p></div>
+      ):(
+        <div className="cwrap">
+          <table className="ptbl">
+            <thead>
+              <tr>
+                <th style={{textAlign:'left'}}>종목</th>
+                <th>보유</th>
+                <th>평균단가</th>
+                <th>현재가</th>
+                <th>평가금액</th>
+                <th>수익률</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(portfolio).map(([id,h])=>{
+                const s=stocks[id];const t=gt(id);
+                const val=s.price*h.shares;
+                const rr=(s.price-h.avg)/h.avg*100;
+                return(
+                  <tr key={id}>
+                    <td>
+                      <div style={{display:'flex',alignItems:'center',gap:7}}>
+                        <span style={{fontSize:18}}>{t.e}</span>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:12}}>{t.name}</div>
+                          <div style={{fontSize:10,color:'var(--muted)'}}>순위 {s.rank}위</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="mono">{h.shares}<span style={{color:'var(--muted)',fontSize:10}}> 주</span></td>
+                    <td className="mono">{won(h.avg)}</td>
+                    <td className="mono">{won(s.price)}</td>
+                    <td className="mono" style={{fontWeight:700}}>{won(val)}</td>
+                    <td className={`mono ${rr>=0?'g':'r'}`} style={{fontWeight:700}}>{pct(rr)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LbPage({user,total,ret}){
+  const lb=[...LB_DEMO];
+  if(user){
+    const idx=lb.findIndex(r=>r.n===user.n);
+    if(idx===-1){lb.push({n:user.n,a:total,r:ret});lb.sort((a,b)=>b.a-a.a);lb.splice(10);}
+    else{lb[idx]={n:user.n,a:total,r:ret};lb.sort((a,b)=>b.a-a.a);lb.splice(10);}
+  }
+  return(
+    <div>
+      <div className="stitle bebas">🏆 INVESTOR RANKING — TOP 10</div>
+      <div className="cwrap">
+        {lb.map((r,i)=>{
+          const isMe=user&&r.n===user.n;
+          const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':null;
+          return(
+            <div key={i} className={`lbrow${isMe?' lbme':''}`}>
+              <div className={`lbrank bebas ${i===0?'m1':i===1?'m2':i===2?'m3':'mu'}`}>
+                {medal||`#${i+1}`}
+              </div>
+              <div className="lbnick">
+                {r.n}{isMe&&<span style={{fontSize:10,color:'var(--gold)',fontWeight:700}}> ← 나</span>}
+              </div>
+              <div>
+                <div className="lbasset mono">{won(r.a)}</div>
+                <div className={`lbret mono ${r.r>=0?'g':'r'}`}>{pct(r.r)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SchPage(){
+  const grouped=SCH.reduce((acc,g)=>{(acc[g.d]=acc[g.d]||[]).push(g);return acc;},{});
+  return(
+    <div>
+      <div className="stitle bebas">📅 KBO 경기 일정 — 2026</div>
+      {Object.entries(grouped).map(([date,games])=>(
+        <div key={date} style={{marginBottom:14}}>
+          <div className="dhead">{date}</div>
+          <div className="cwrap" style={{borderRadius:'0 0 var(--r) var(--r)'}}>
+            {games.map((g,i)=>{
+              const h=gt(g.h),a=gt(g.a);
+              return(
+                <div key={i} className="sgrow">
+                  <div style={{display:'flex',alignItems:'center',gap:6,flex:1,fontWeight:700,fontSize:12}}>
+                    <span style={{fontSize:17}}>{a.e}</span>
+                    <span>{a.s}</span>
+                    <span className="svs" style={{fontSize:10,color:'var(--muted)'}}>VS</span>
+                    <span>{h.s}</span>
+                    <span style={{fontSize:17}}>{h.e}</span>
+                  </div>
+                  <div className="stime mono">{g.t}</div>
+                  <div className="svenue mu">{g.v}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PredPage({stocks}){
+  return(
+    <div>
+      <div className="stitle bebas">🔮 주가 예측 & 코멘트</div>
+      <div className="alert alerti">📢 재미 목적의 코멘트입니다. 실제 투자 조언이 아닙니다.</div>
+      <div className="pgd">
+        {TEAMS.map(team=>{
+          const s=stocks[team.id];const p=PREDS[team.id];
+          return(
+            <div key={team.id} className="prd">
+              <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:10}}>
+                <span style={{fontSize:26}}>{team.e}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:12}}>{team.name}</div>
+                  <div className="mono" style={{fontSize:11,color:'var(--muted)'}}>
+                    {won(s.price)}&nbsp;
+                    <span className={s.ch>=0?'g':'r'}>{pct(s.ch)}</span>
+                  </div>
+                </div>
+              </div>
+              <span className="pbadge" style={{background:p.col+'22',color:p.col,border:`1px solid ${p.col}44`}}>
+                {p.em} {p.lbl}
+              </span>
+              <div className="pcmt">{p.cmt}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AdminPage({stocks,onUpdate,mopen,onToggle}){
+  const [auth,setAuth]=useState(false);
+  const [pw,setPw]=useState('');
+  const [upd,setUpd]=useState(
+    ()=>Object.fromEntries(TEAMS.map(t=>[t.id,{rank:stocks[t.id].rank,w:0,l:0}]))
+  );
+  if(!auth)return(
+    <div>
+      <div className="stitle bebas">⚙️ 관리자 패널</div>
+      <div style={{maxWidth:320,margin:'60px auto',textAlign:'center'}}>
+        <div style={{fontSize:40,marginBottom:14}}>🔐</div>
+        <div style={{fontSize:17,fontWeight:700,marginBottom:18}}>관리자 인증</div>
+        <div className="field">
+          <input type="password" placeholder="관리자 비밀번호" value={pw} onChange={e=>setPw(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&pw===APW&&setAuth(true)} style={{textAlign:'center'}} autoFocus />
+        </div>
+        <button className="sbmit" onClick={()=>pw===APW&&setAuth(true)}>인증하기</button>
+      </div>
+    </div>
+  );
+  return(
+    <div>
+      <div className="stitle bebas">⚙️ 관리자 패널</div>
+      <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap'}}>
+        <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:12,padding:'12px 16px',flex:1,minWidth:200}}>
+          <div style={{fontSize:10,color:'var(--muted)',fontWeight:700,marginBottom:8,letterSpacing:'.5px'}}>마켓 상태</div>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <span style={{fontWeight:700,fontSize:13,color:mopen?'var(--green)':'var(--red)'}}>
+              {mopen?'🟢 OPEN':'🔴 CLOSED'}
+            </span>
+            <button onClick={onToggle} style={{background:'var(--bg3)',border:'1px solid var(--border)',color:'var(--text)',padding:'6px 14px',borderRadius:8,cursor:'pointer',fontSize:11,fontFamily:'Noto Sans KR'}}>
+              {mopen?'마감하기':'오픈하기'}
+            </button>
+          </div>
+        </div>
+        <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:12,padding:'12px 16px',flex:1,minWidth:200}}>
+          <div style={{fontSize:10,color:'var(--muted)',fontWeight:700,marginBottom:8,letterSpacing:'.5px'}}>일괄 업데이트</div>
+          <button className="updBtn" style={{fontSize:12,padding:'8px 18px'}}
+            onClick={()=>TEAMS.forEach(t=>{const u=upd[t.id];const s=stocks[t.id];const np=calcPrice(s.price,u.rank,s.rank,u.w,u.l);onUpdate(t.id,np,u.rank,u.w,u.l);})}>
+            ⚡ 전체 팀 주가 반영
+          </button>
+        </div>
+      </div>
+      <div className="alert alerti" style={{marginBottom:16}}>
+        📌 <strong>공식:</strong> 순위 변동(최대 ±9%) + 승률(최대 ±6%) = 최대 ±15% | 전패 -6% / 전승 +6% / 순위 1위 변동 ±3%
+      </div>
+      <div className="agd">
+        {TEAMS.map(team=>{
+          const s=stocks[team.id];const u=upd[team.id];
+          const preview=calcPrice(s.price,u.rank,s.rank,u.w,u.l);
+          const pch=(preview-s.price)/s.price*100;
+          const set=(k,v)=>setUpd(prev=>({...prev,[team.id]:{...prev[team.id],[k]:v}}));
+          return(
+            <div key={team.id} className="ac">
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                <span style={{fontSize:22}}>{team.e}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:12}}>{team.name}</div>
+                  <div className="mono" style={{fontSize:10,color:'var(--muted)'}}>현재 {won(s.price)} | {s.rank}위</div>
+                </div>
+              </div>
+              <div className="ag3">
+                {[{k:'rank',lbl:'새 순위',min:1,max:10},{k:'w',lbl:'주간 승',min:0,max:10},{k:'l',lbl:'주간 패',min:0,max:10}].map(f=>(
+                  <div key={f.k}>
+                    <div className="ainplbl">{f.lbl}</div>
+                    <input className="ainp" type="number" min={f.min} max={f.max} value={u[f.k]}
+                      onChange={e=>set(f.k,Number(e.target.value))} />
+                  </div>
+                ))}
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div>
+                  <div style={{fontSize:9,color:'var(--muted)',marginBottom:2}}>반영 후 예상 주가</div>
+                  <div className="mono" style={{fontWeight:700,fontSize:13,color:pch>=0?'var(--green)':'var(--red)'}}>
+                    {won(preview)} <span style={{fontSize:11}}>({pch>=0?'+':''}{pch.toFixed(1)}%)</span>
+                  </div>
+                </div>
+                <button className="updBtn" onClick={()=>{
+                  onUpdate(team.id,preview,u.rank,u.w,u.l);
+                }}>반영</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [tab,setTab]=useState('market');
+  const [user,setUser]=useState(null);
+  const [showLogin,setShowLogin]=useState(false);
+  const [stocks,setStocks]=useState(()=>{try{const s=localStorage.getItem('kbs_stk');return s?JSON.parse(s):S0;}catch{return S0;}});
+  const [port,setPort]=useState({});
+  const [cash,setCash]=useState(IC);
+  const [trade,setTrade]=useState(null);
+  const [toast,setToast]=useState(null);
+  const [mopen,setMopen]=useState(true);
+
+  useEffect(()=>{
+    const d=new Date();
+    // setMopen(d.getDay()===1); // 프로덕션: 월요일만
+  },[]);
+
+  useEffect(()=>{
+    if(!user)return;
+    try{
+      const s=localStorage.getItem(`kbs_u_${user.n}`);
+      if(s){const{p,c}=JSON.parse(s);setPort(p||{});setCash(c!==undefined?c:IC);}
+      else{setPort({});setCash(IC);}
+    }catch{}
+  },[user]);
+
+  useEffect(()=>{
+    if(user)try{localStorage.setItem(`kbs_u_${user.n}`,JSON.stringify({p:port,c:cash}));}catch{}
+  },[port,cash,user]);
+
+  useEffect(()=>{try{localStorage.setItem('kbs_stk',JSON.stringify(stocks));}catch{};},[stocks]);
+
+  const toast2=(msg,type='ok')=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+
+  const sval=useMemo(()=>Object.entries(port).reduce((s,[id,h])=>s+h.shares*stocks[id].price,0),[port,stocks]);
+  const total=cash+sval;
+  const ret=(total-IC)/IC*100;
+
+  const login=(n,p)=>{setUser({n,p});setShowLogin(false);toast2(`${n}님 환영합니다! ⚾`);};
+  const logout=()=>{setUser(null);setPort({});setCash(IC);};
+
+  const openTrade=(team,mode)=>{
+    if(!user){setShowLogin(true);return;}
+    if(!mopen){toast2('월요일에만 거래 가능합니다','err');return;}
+    setTrade({team,mode});
+  };
+
+  const confirmTrade=(id,qty,mode)=>{
+    const price=stocks[id].price;
+    if(mode==='buy'){
+      const cost=price*qty;
+      if(cost>cash){toast2('예수금이 부족합니다','err');return;}
+      setCash(c=>c-cost);
+      setPort(p=>{
+        const ex=p[id];
+        if(ex){const ns=ex.shares+qty;return{...p,[id]:{shares:ns,avg:Math.round((ex.avg*ex.shares+price*qty)/ns)}};}
+        return{...p,[id]:{shares:qty,avg:price}};
+      });
+      toast2(`${gt(id).name} ${qty}주 매수 완료! 💰`);
+    }else{
+      const h=port[id];
+      if(!h||h.shares<qty){toast2('보유 수량이 부족합니다','err');return;}
+      const rev=price*qty;
+      setCash(c=>c+rev);
+      setPort(p=>{
+        const ns=p[id].shares-qty;
+        if(ns===0){const n={...p};delete n[id];return n;}
+        return{...p,[id]:{...p[id],shares:ns}};
+      });
+      toast2(`매도 완료! ${won(rev)} 입금 ✅`);
+    }
+    setTrade(null);
+  };
+
+  const updateStock=(id,np,nr,w,l)=>{
+    setStocks(prev=>{
+      const old=prev[id];
+      return{...prev,[id]:{...old,prev:old.price,price:np,pr:old.rank,rank:nr,ch:(np-old.price)/old.price*100,rec:`${w}승${l}패`}};
+    });
+    toast2(`${gt(id).name} 주가 업데이트! ✅`);
+  };
+
+  return(
+    <div>
+      <Ticker stocks={stocks}/>
+      <Header user={user} tab={tab} setTab={setTab} onLogin={()=>setShowLogin(true)} onLogout={logout} total={total} ret={ret} mopen={mopen}/>
+      <div className={`sbar ${mopen?'sopen':'sclosed'}`}>
+        {mopen?'🟢 MARKET OPEN — 오늘 자정까지 거래 가능합니다':'🔴 MARKET CLOSED — 매주 월요일 00:00~23:59 거래 가능'}
+      </div>
+      <div className="main">
+        {tab==='market'&&<MarketPage stocks={stocks} portfolio={port} cash={cash} user={user} mopen={mopen} onTrade={openTrade}/>}
+        {tab==='portfolio'&&<PortfolioPage stocks={stocks} portfolio={port} cash={cash} total={total} ret={ret} user={user}/>}
+        {tab==='lb'&&<LbPage user={user} total={total} ret={ret}/>}
+        {tab==='sch'&&<SchPage/>}
+        {tab==='pred'&&<PredPage stocks={stocks}/>}
+        {tab==='admin'&&<AdminPage stocks={stocks} onUpdate={updateStock} mopen={mopen} onToggle={()=>setMopen(m=>!m)}/>}
+      </div>
+      {showLogin&&<LoginModal onClose={()=>setShowLogin(false)} onLogin={login}/>}
+      {trade&&<TradeModal team={trade.team} stock={stocks[trade.team.id]} mode={trade.mode} portfolio={port} cash={cash} onConfirm={confirmTrade} onClose={()=>setTrade(null)}/>}
+      <Toast t={toast}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
