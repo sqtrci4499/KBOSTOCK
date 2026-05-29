@@ -381,8 +381,8 @@ const adminGiveBonus = async () => {
 };
 // ── SUPABASE 설정 ─────────────────────────────────────────
 // ① supabase.com 에서 무료 프로젝트 생성 후 아래 두 줄 채우기
-const SB_URL = ''; // 예: https://abcdefgh.supabase.co
-const SB_KEY = ''; // Project Settings > API > anon public key
+const SB_URL = 'https://ittthptekusmpygfiznm.supabase.co'; // 예: https://abcdefgh.supabase.co
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0dHRocHRla3VzbXB5Z2Zpem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTU5ODIsImV4cCI6MjA5NDgzMTk4Mn0.IBxI4q9jdTcJ9Qc75cO1v2f_KM766J5ukyZLWe2UzZ0'; // Project Settings > API > anon public key
 const USE_SB = !!(SB_URL && SB_KEY);
 
 const sbFetch = async (path, method='GET', body=null, prefer='') => {
