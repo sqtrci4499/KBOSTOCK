@@ -384,14 +384,29 @@ select option{background:var(--bg2);color:var(--text)}
 <div id="loading">
   <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:#F0B429;letter-spacing:5px;margin-bottom:8px">KBOSTOCK</div>
   <div style="font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#64748B;margin-bottom:28px">KBO 가상 주식 거래소</div>
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;margin-bottom:20px">
     <div class="ld-dot" style="animation-delay:0s"></div>
     <div class="ld-dot" style="animation-delay:.16s"></div>
     <div class="ld-dot" style="animation-delay:.32s"></div>
   </div>
+  <div id="ld-msg" style="font-family:'Noto Sans KR',sans-serif;font-size:12px;color:#64748B;display:none;max-width:300px;text-align:center;line-height:1.7"></div>
 </div>
+<script>
+// 로딩 타임아웃 - 5초 후 메시지, 15초 후 강제 해제
+var ldTimer1 = setTimeout(function(){
+  var msg = document.getElementById('ld-msg');
+  if(msg){ msg.style.display='block'; msg.textContent='처음 로딩은 시간이 걸릴 수 있어요. 잠시만 기다려주세요...'; }
+}, 5000);
+var ldTimer2 = setTimeout(function(){
+  var el = document.getElementById('loading');
+  if(el){ 
+    el.innerHTML = '<div style="font-family:Noto Sans KR,sans-serif;text-align:center;padding:20px"><div style="font-size:36px;margin-bottom:12px">⚠️</div><div style="color:#F0B429;font-size:15px;font-weight:700;margin-bottom:8px">로딩 오류</div><div style="color:#64748B;font-size:12px;line-height:1.8">페이지를 새로고침 해주세요.<br>계속 문제가 발생하면<br>캐시를 삭제 후 다시 시도하세요.<br><br><button onclick="location.reload()" style="background:#F0B429;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;margin-top:8px">새로고침</button></div></div>';
+  }
+}, 15000);
+window._clearLoadTimers = function(){ clearTimeout(ldTimer1); clearTimeout(ldTimer2); };
+</script>
 <div id="root"></div>
-<script type="text/babel">
+<script type="text/babel" data-presets="react">
 const {useState,useMemo,useEffect} = React;
 const IC=3_000_000;
 const APW="kbostock2026";
@@ -411,7 +426,6 @@ const TEAM_LOGOS={
 
 
 
-// ── 주간 보너스 시스템 ────────────────────────────────────
 
 const ACHIEVEMENTS=[
   {id:'first_buy',   icon:'🎯', name:'첫 투자자',   desc:'첫 번째 매수 완료'},
@@ -425,6 +439,28 @@ const ACHIEVEMENTS=[
   {id:'loss',        icon:'📉', name:'손실 경험',   desc:'매도 손실 1회 이상'},
   {id:'veteran',     icon:'🌟', name:'베테랑',      desc:'거래 10회 이상 달성'},
 ];
+const generateAutoComments=(stockData,standingsData)=>{
+  const out={};
+  TEAMS.forEach(team=>{
+    const s=stockData[team.id];const rank=s.rank;const ch=s.ch;
+    let c='';
+    if(rank===1)c='리그 압도적 1위! 황제주 등극 👑';
+    else if(rank===2)c='2위 안착. 1위 추격 中 강세 지속 📈';
+    else if(rank===3)c='상위권 3위 안정. 블루칩 투자처 💙';
+    else if(rank<=5)c=`중상위권 ${rank}위. 안정 보유 추천 🛡️`;
+    else if(rank<=7)c=`중하위권 ${rank}위. 반등 여부 주시 👀`;
+    else if(rank===8)c='하위권 진입... 리스크 관리 필수 ⚠️';
+    else if(rank===9)c='9위 하락세. 매도 타이밍 재검토 📉';
+    else c='꼴찌 위기! 상폐 경계 🚨';
+    if(ch>=9)c+=` (+${ch.toFixed(1)}% 급등!)`;
+    else if(ch>=5)c+=` (+${ch.toFixed(1)}% 상승)`;
+    else if(ch<=-9)c+=` (${ch.toFixed(1)}% 급락)`;
+    else if(ch<=-5)c+=` (${ch.toFixed(1)}% 하락)`;
+    out[team.id]=c;
+  });
+  return out;
+};
+
 const BONUS = 1_000_000; // 매주 월요일 지급액
 
 const getTodayMonday = () => {
@@ -469,7 +505,6 @@ const adminGiveBonus = async () => {
     return true;
   }catch{ return false; }
 };
-// ── SUPABASE 설정 ─────────────────────────────────────────
 // ① supabase.com 에서 무료 프로젝트 생성 후 아래 두 줄 채우기
 const SB_URL = 'https://ittthptekusmpygfiznm.supabase.co'; // 예: https://abcdefgh.supabase.co
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0dHRocHRla3VzbXB5Z2Zpem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTU5ODIsImV4cCI6MjA5NDgzMTk4Mn0.IBxI4q9jdTcJ9Qc75cO1v2f_KM766J5ukyZLWe2UzZ0'; // Project Settings > API > anon public key
@@ -660,7 +695,6 @@ function TeamBadge({team,size=36}){
 }
 
 
-// ── DonutChart ─────────────────────────────────────────
 function AchievementsPage({achievements}){
   return(
     <div>
@@ -728,7 +762,6 @@ function DonutChart({items}){
   );
 }
 
-// ── PriceChart ──────────────────────────────────────────
 function PriceChart({data,color,width=320,height=90}){
   if(!data||data.length<2)return null;
   const min=Math.min(...data);const max=Math.max(...data);const range=max-min||1;
@@ -777,7 +810,6 @@ function PriceChart({data,color,width=320,height=90}){
   );
 }
 
-// ── HelpModal ───────────────────────────────────────────
 function HelpModal({onClose}){
   const rules=[
     {q:'초기 자산',a:'300만원으로 시작합니다. 전액 주식 매수에 사용 가능합니다.'},
@@ -808,7 +840,6 @@ function HelpModal({onClose}){
   );
 }
 
-// ── AchievementNotif ────────────────────────────────────
 function AchievementNotif({ach,onClose}){
   useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t);},[]);
   return(
@@ -823,7 +854,6 @@ function AchievementNotif({ach,onClose}){
   );
 }
 
-// ── MobileNav ───────────────────────────────────────────
 function MobileNav({tab,setTab,newTx}){
   const items=[
     {id:'market',icon:'📈',label:'마켓'},
@@ -845,7 +875,6 @@ function MobileNav({tab,setTab,newTx}){
   );
 }
 
-// ── TopMovers ───────────────────────────────────────────
 function TopMovers({stocks}){
   const sorted=[...TEAMS].sort((a,b)=>Math.abs(stocks[b.id].ch)-Math.abs(stocks[a.id].ch));
   const hot=sorted.slice(0,3);
@@ -1669,10 +1698,10 @@ function BoardPage({user,board,onPost,onDelete,onPin}){
 
 function WeeklySummary({stocks, mopen, user, transactions}){
   const thisWeekTx = transactions.filter(t=>{
-    const d=new Date(parseInt(t.id));
+    try{const d=new Date(parseInt(t.id)||0);
     const now=new Date();const day=now.getDay();
     const mon=new Date(now);mon.setDate(now.getDate()-(day===0?6:day-1));mon.setHours(0,0,0,0);
-    return d>=mon;
+    return d>=mon;}catch{return false;}
   });
   const topGainer = [...TEAMS].sort((a,b)=>stocks[b.id].ch-stocks[a.id].ch)[0];
   const topLoser = [...TEAMS].sort((a,b)=>stocks[a.id].ch-stocks[b.id].ch)[0];
@@ -2339,6 +2368,7 @@ function App(){
   useEffect(()=>{
     /* setMopen(new Date().getDay()===1); */
     // 로딩 스크린 제거
+    if(window._clearLoadTimers)window._clearLoadTimers();
     const el=document.getElementById('loading');
     if(el){el.classList.add('hide');setTimeout(()=>el.remove(),600);}
   },[]);
@@ -2487,35 +2517,6 @@ function App(){
     if(txList.length>=10) unlockAch('veteran');
   };
 
-const generateAutoComments = (stockData, standingsData) => {
-  const comments = {};
-  TEAMS.forEach(team => {
-    const s = stockData[team.id];
-    const std = standingsData?.find(st => st.id === team.id);
-    const rank = s.rank;
-    const ch = s.ch;
-    const wr = std ? std.w / (std.w + std.l || 1) : 0.5;
-    
-    let comment = '';
-    if (rank === 1) comment = `리그 압도적 1위! 황제주 등극. 꾸준한 우상향 기대 👑`;
-    else if (rank === 2) comment = `2위 안착. 1위 추격 中 — 강세 지속 전망 📈`;
-    else if (rank === 3) comment = `상위권 3위 안정. 블루칩 투자처로 적합 💙`;
-    else if (rank <= 5) comment = `중상위권 ${rank}위. 안정적 보유 전략 추천 🛡️`;
-    else if (rank <= 7) comment = `중하위권 ${rank}위. 반등 여부 주시 필요 👀`;
-    else if (rank === 8) comment = `하위권 진입... 리스크 관리 필수 ⚠️`;
-    else if (rank === 9) comment = `${rank}위 하락세. 매도 타이밍 재검토 권장 📉`;
-    else comment = `꼴찌 위기! 상폐 경계 — 소액 분산 투자만 권장 🚨`;
-    
-    // 주가 변동 추가 코멘트
-    if (ch >= 9) comment += ` (이번 주 급등 +${ch.toFixed(1)}%!)`;
-    else if (ch >= 5) comment += ` (이번 주 상승 +${ch.toFixed(1)}%)`;
-    else if (ch <= -9) comment += ` (이번 주 급락 ${ch.toFixed(1)}%⚡)`;
-    else if (ch <= -5) comment += ` (이번 주 하락 ${ch.toFixed(1)}%)`;
-    
-    comments[team.id] = comment;
-  });
-  return comments;
-};
   const postToBoard=(post)=>setBoard(prev=>[post,...prev].slice(0,200));
   const deletePost=(id)=>setBoard(prev=>prev.filter(p=>p.id!==id));
   const pinPost=(id)=>setBoard(prev=>prev.map(p=>p.id===id?{...p,pinned:!p.pinned}:p));
@@ -2596,7 +2597,39 @@ const notifEnabled=localStorage.getItem('kbs_notif')==='on';
     </div>
   );
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+class ErrorBoundary extends React.Component{
+  constructor(p){super(p);this.state={err:null};}
+  static getDerivedStateFromError(e){return{err:e};}
+  componentDidCatch(e,info){
+    if(window._clearLoadTimers)window._clearLoadTimers();
+    const el=document.getElementById('loading');
+    if(el)el.style.display='none';
+    console.error('KBOSTOCK Error:',e,info);
+  }
+  render(){
+    if(this.state.err){return(
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#080C18',color:'#E2E8F7',textAlign:'center',padding:20}}>
+        <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:28,color:'#F0B429',letterSpacing:3,marginBottom:8}}>KBOSTOCK</div>
+        <div style={{fontSize:14,color:'#64748B',marginBottom:16,lineHeight:1.7}}>앱 로딩 중 오류가 발생했습니다.<br/>브라우저 캐시를 삭제 후 다시 시도해주세요.</div>
+        <div style={{background:'#0D1628',border:'1px solid #1A2D4A',borderRadius:8,padding:'10px 16px',fontSize:11,color:'#FF3B56',marginBottom:20,maxWidth:400,wordBreak:'break-all'}}>
+          {this.state.err.toString()}
+        </div>
+        <button onClick={()=>{localStorage.clear();location.reload();}}
+          style={{background:'#F0B429',color:'#000',border:'none',padding:'12px 24px',borderRadius:9,cursor:'pointer',fontSize:13,fontWeight:900,fontFamily:'Noto Sans KR',marginRight:8}}>
+          초기화 후 재시작
+        </button>
+        <button onClick={()=>location.reload()}
+          style={{background:'#111E35',color:'#E2E8F7',border:'1px solid #1A2D4A',padding:'12px 24px',borderRadius:9,cursor:'pointer',fontSize:13,fontFamily:'Noto Sans KR'}}>
+          새로고침
+        </button>
+      </div>
+    );}
+    return this.props.children;
+  }
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<ErrorBoundary><App/></ErrorBoundary>);
 </script>
 </body>
 </html>
