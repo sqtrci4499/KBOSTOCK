@@ -1353,7 +1353,7 @@ function TeamDetailModal({team,stock,priceHistory,comments,schedule,portfolio,ca
 
 function TradeHistoryPage({transactions,user,stocks,onExport}){
   if(!user)return<div className="empty"><div style={{fontSize:34,marginBottom:10}}>📋</div><p>로그인 후 거래 내역을 확인하세요</p></div>;
-  const totalProfit=transactions.filter(t=>t.mode==='sell').reduce((s,t)=>s+(t.price-t.buyAvg)*t.qty,0);
+  const totalProfit=transactions?.filter(t=>t.mode==='sell').reduce((s,t)=>s+(t.price-t.buyAvg)*t.qty,0);
   return(
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
@@ -1363,8 +1363,8 @@ function TradeHistoryPage({transactions,user,stocks,onExport}){
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:9,marginBottom:18}}>
         {[
           {l:'총 거래 횟수',v:`${transactions.length}회`},
-          {l:'매수',v:`${transactions.filter(t=>t.mode==='buy').length}회`,c:'g'},
-          {l:'매도',v:`${transactions.filter(t=>t.mode==='sell').length}회`,c:'r'},
+          {l:'매수',v:`${transactions?.filter(t=>t.mode==='buy').length}회`,c:'g'},
+          {l:'매도',v:`${transactions?.filter(t=>t.mode==='sell').length}회`,c:'r'},
         ].map((x,i)=>(
           <div key={i} className="pcard"><div className="plbl">{x.l}</div><div className={`pval mono ${x.c||''}`}>{x.v}</div></div>
         ))}
@@ -1506,7 +1506,7 @@ function TodayGames({schedule}){
   );
 }
 
-function Header({user,tab,setTab,onLogin,onLogout,total,ret,mopen}){
+function Header({user,tab,setTab,onLogin,onLogout,total,ret,mopen,onNotif,notifOn}){
   const tabs=[
     {id:'market',l:'📈 마켓'},{id:'portfolio',l:'💼 포트폴리오'},
     {id:'lb',l:'🏆 순위표'},{id:'sch',l:'📅 일정'},
@@ -1523,8 +1523,8 @@ function Header({user,tab,setTab,onLogin,onLogout,total,ret,mopen}){
         {user&&<button onClick={()=>setShowStreak(true)} style={{background:'rgba(240,180,41,.08)',border:'1px solid rgba(240,180,41,.2)',color:'var(--gold)',padding:'5px 9px',borderRadius:7,cursor:'pointer',fontSize:11,fontFamily:'Noto Sans KR',flexShrink:0}}>🗓️</button>}
         <button onClick={()=>setShowInvite(true)} style={{background:'rgba(240,180,41,.1)',border:'1px solid rgba(240,180,41,.25)',color:'var(--gold)',padding:'5px 10px',borderRadius:7,cursor:'pointer',fontSize:11,fontFamily:'Noto Sans KR',flexShrink:0}}>📤 초대</button>
         <ThemeSelector/>
-        <button onClick={requestNotification} className={notifEnabled?'notif-btn on':'notif-btn'} style={{flexShrink:0}}>
-          {notifEnabled?'🔔':'🔕'}
+        <button onClick={onNotif} className={notifOn?'notif-btn on':'notif-btn'} style={{flexShrink:0}}>
+          {notifOn?'🔔':'🔕'}
         </button>
         {user?(
           <>
@@ -2008,7 +2008,7 @@ function BoardPage({user,board,onPost,onDelete,onPin,onLike}){
       const rows=await sbFetch('kbs_board?select=*&order=created_at.desc&limit=50');
       if(rows){
         const posts=rows.map(r=>({id:r.id||Date.now(),author:r.author||'',text:r.text||'',time:(r.created_at||'').slice(0,16).replace('T',' '),pinned:r.pinned||false,likes:[]}));
-        posts.forEach(p=>{if(!board.find(b=>b.id===p.id))onPost(p);});
+        posts.forEach(p=>{if(!board?.find(b=>b.id===p.id))onPost(p);});
       }
     }catch(e){console.warn('board load:',e);}
     setLoading(false);
@@ -2063,7 +2063,7 @@ function BoardPage({user,board,onPost,onDelete,onPin,onLike}){
 }
 
 function WeeklySummary({stocks, mopen, user, transactions}){
-  const thisWeekTx = transactions.filter(t=>{
+  const thisWeekTx = transactions?.filter(t=>{
     try{const d=new Date(parseInt(t.id)||0);
     const now=new Date();const day=now.getDay();
     const mon=new Date(now);mon.setDate(now.getDate()-(day===0?6:day-1));mon.setHours(0,0,0,0);
@@ -2218,7 +2218,7 @@ function AdminDashboard({stocks,lbData,board,transactions,announcements}){
     {icon:'💰',l:'시장 총 규모',v:`${(marketCap/100000000).toFixed(1)}억원`},
     {icon:'🏆',l:'현재 1위',v:topTeam?`${topTeam.e} ${topTeam.s}`:'-'},
     {icon:'💬',l:'게시글',v:`${board.length}개`},
-    {icon:'📢',l:'활성 공지',v:`${announcements.filter(a=>a).length}개`},
+    {icon:'📢',l:'활성 공지',v:`${announcements?.filter(a=>a).length}개`},
   ];
   return(
     <div>
@@ -3716,7 +3716,7 @@ const requestNotification = async () => {
     }
   }
 };
-const notifEnabled=localStorage.getItem('kbs_notif')==='on';
+const [notifEnabled,setNotifEnabled]=useState(()=>localStorage.getItem('kbs_notif')==='on');
 
 const exportCSV=(transactions,nick)=>{
   if(!transactions.length)return;
@@ -3762,7 +3762,7 @@ const exportCSV=(transactions,nick)=>{
   const dismissAnn=id=>{setDismissedAnns(prev=>[...prev,id]);};
   const addAnnouncement=ann=>{setAnnouncements(prev=>[ann,...prev].slice(0,20));toast2('공지 등록 완료 ✅');};
   const deleteAnn=id=>{setAnnouncements(prev=>prev.filter(a=>a.id!==id));};
-  const visibleAnns=announcements.filter(a=>!dismissedAnns.includes(a.id));
+  const visibleAnns=announcements?.filter(a=>!dismissedAnns.includes(a.id));
 
   useEffect(()=>{if(tab==='txs')setNewTxCount(0);},[tab]);
 
@@ -3786,7 +3786,7 @@ const exportCSV=(transactions,nick)=>{
   return(
     <div>
       <Ticker stocks={stocks}/>
-      <Header user={user} tab={tab} setTab={setTab} onLogin={()=>setShowLogin(true)} onLogout={logout} total={total} ret={ret} mopen={mopen}/>
+      <Header user={user} tab={tab} setTab={setTab} onLogin={()=>setShowLogin(true)} onLogout={logout} total={total} ret={ret} mopen={mopen} onNotif={requestNotification} notifOn={notifEnabled}/>
       <StatBar board={board} transactions={transactions} lbData={lbData} stocks={stocks}/>
       <AnnouncementBanner announcements={visibleAnns} onDismiss={dismissAnn}/>
       <div className={`sbar ${mopen?'sopen':'sclosed'}`} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12}}><span>{mopen?'🟢 MARKET OPEN':'🔴 MARKET CLOSED'}</span><MarketTimer mopen={mopen}/></div>
