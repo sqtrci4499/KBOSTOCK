@@ -809,8 +809,8 @@ const adminGiveBonus = async () => {
   }catch{ return false; }
 };
 // ① supabase.com 에서 무료 프로젝트 생성 후 아래 두 줄 채우기
-const SB_URL = 'https://ittthptekusmpygfiznm.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0dHRocHRla3VzbXB5Z2Zpem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTU5ODIsImV4cCI6MjA5NDgzMTk4Mn0.IBxI4q9jdTcJ9Qc75cO1v2f_KM766J5ukyZLWe2UzZ0';
+const SB_URL = '';
+const SB_KEY = '';
 const USE_SB = !!(SB_URL && SB_KEY);
 
 const sbFetch = async (path, method='GET', body=null, prefer='') => {
@@ -842,57 +842,58 @@ const TEAMS=[
 ];
 
 // 5/12 기준 실제 KBO 순위 반영
+// 2026.06.16 기준 실제 KBO 순위/최근10경기 반영
 const S0={
-  KT:   {price:90000,prev:85000,rank:1, pr:4, rec:'23승1무13패',ch:5.88},
-  SAM:  {price:78000,prev:72000,rank:2, pr:7, rec:'21승1무14패',ch:8.33},
-  LG:   {price:75000,prev:78000,rank:3, pr:2, rec:'22승15패',  ch:-3.85},
-  SSG:  {price:68000,prev:66000,rank:4, pr:5, rec:'20승1무16패',ch:3.03},
-  DOOSAN:{price:58000,prev:56000,rank:5,pr:3, rec:'18승1무19패',ch:3.57},
-  HAN:  {price:52000,prev:50000,rank:6, pr:8, rec:'17승20패',  ch:4.00},
-  KIA:  {price:50000,prev:53000,rank:7, pr:1, rec:'17승1무20패',ch:-5.66},
-  NC:   {price:44000,prev:43000,rank:8, pr:9, rec:'16승1무20패',ch:2.33},
-  LOTTE:{price:38000,prev:40000,rank:9, pr:6, rec:'14승1무21패',ch:-5.00},
-  KIW:  {price:30000,prev:32000,rank:10,pr:10,rec:'13승1무24패',ch:-6.25},
+  LG:   {price:88000,prev:85000,rank:1, pr:1, rec:'7승3패',ch:3.00},
+  KT:   {price:84000,prev:84000,rank:2, pr:2, rec:'6승4패',ch:0.00},
+  SAM:  {price:80000,prev:82000,rank:3, pr:3, rec:'4승6패',ch:-3.00},
+  KIA:  {price:73000,prev:73000,rank:4, pr:4, rec:'5승5패',ch:0.00},
+  DOOSAN:{price:72000,prev:70000,rank:5,pr:5, rec:'7승3패',ch:3.00},
+  HAN:  {price:71000,prev:71000,rank:6, pr:6, rec:'5승5패',ch:0.00},
+  NC:   {price:63000,prev:63000,rank:7, pr:7, rec:'6승4패',ch:0.00},
+  SSG:  {price:59000,prev:61000,rank:8, pr:8, rec:'4승6패',ch:-3.00},
+  KIW:  {price:55000,prev:55000,rank:9, pr:9, rec:'5승5패',ch:0.00},
+  LOTTE:{price:53000,prev:56000,rank:10,pr:10,rec:'2승8패',ch:-6.00},
 };
 
-// 실제 순위표 데이터 (W-D-L)
+// 2026.06.16 기준 실제 KBO 순위표 데이터 (W-D-L)
 const STANDINGS_INIT=[
-  {id:'KT',   w:23,d:1,l:13},
-  {id:'SAM',  w:21,d:1,l:14},
-  {id:'LG',   w:22,d:0,l:15},
-  {id:'SSG',  w:20,d:1,l:16},
-  {id:'DOOSAN',w:18,d:1,l:19},
-  {id:'HAN',  w:17,d:0,l:20},
-  {id:'KIA',  w:17,d:1,l:20},
-  {id:'NC',   w:16,d:1,l:20},
-  {id:'LOTTE',w:14,d:1,l:21},
-  {id:'KIW',  w:13,d:1,l:24},
+  {id:'LG',   w:41,d:0,l:24},
+  {id:'KT',   w:38,d:1,l:25},
+  {id:'SAM',  w:36,d:1,l:27},
+  {id:'KIA',  w:34,d:1,l:31},
+  {id:'DOOSAN',w:33,d:2,l:31},
+  {id:'HAN',  w:32,d:1,l:31},
+  {id:'NC',   w:28,d:1,l:34},
+  {id:'SSG',  w:27,d:1,l:37},
+  {id:'KIW',  w:26,d:1,l:40},
+  {id:'LOTTE',w:24,d:1,l:39},
 ];
 
 const DEFAULT_COMMENTS={
-  KIA:'KIA, 개막 강호에서 하락세. 반등 가능성 주시!',
-  LG:'디펜딩 챔피언의 자존심 회복 중.',
-  DOOSAN:'전통 강팀 두산 베어스, 중위권 안착.',
-  KT:'리그 1위! 압도적 투타 밸런스.',
-  SSG:'4위 안착. 안정적 중상위권 유지.',
-  LOTTE:'하위권 탈출 못한 롯데... 팬심만이 답.',
-  SAM:'삼성 2위 급상승! 저평가주의 반란.',
-  HAN:'6위로 상위권 도전 중인 한화.',
-  NC:'8위 정체 중. 반등 기회 모색.',
-  KIW:'최하위 키움... 상폐위기 벗어날 수 있을까?',
+  LG:'리그 단독 1위! 최근 10경기 7승3패로 독주 체제 굳히는 중.',
+  KT:'2위 굳건. 1위 추격하며 안정적인 페이스 유지.',
+  SAM:'3위 자리는 지켰지만 최근 흐름은 다소 주춤.',
+  KIA:'디펜딩 챔피언, 4위로 추격조에 위치. 반등 노려야.',
+  DOOSAN:'최근 10경기 7승3패! 무서운 상승세로 중위권 치고 올라옴.',
+  HAN:'6위 중위권. 5할 승률로 분전 중.',
+  NC:'7위. 최근 흐름은 나쁘지 않으나 순위 도약은 아직.',
+  SSG:'8위로 밀려나며 하위권 위기감 고조.',
+  KIW:'9위. 5할 승률 회복했지만 순위 반등은 더딘 편.',
+  LOTTE:'최근 10경기 2승8패... 최하위 탈출이 시급한 롯데.',
 };
 
 const PRED_META={
-  KIA:{lbl:'하락주',em:'📉',col:'#FFAB91'},
-  LG:{lbl:'블루칩',em:'💙',col:'#4FC3F7'},
-  DOOSAN:{lbl:'중간주',em:'⚖️',col:'#80DEEA'},
-  KT:{lbl:'황제주',em:'👑',col:'#FFD700'},
-  SSG:{lbl:'안정주',em:'🛡️',col:'#80DEEA'},
-  LOTTE:{lbl:'실망주',em:'🙏',col:'#FFAB91'},
-  SAM:{lbl:'급등주',em:'🚀',col:'#69F0AE'},
-  HAN:{lbl:'반등주',em:'📈',col:'#CE93D8'},
-  NC:{lbl:'관망주',em:'👀',col:'#FFF176'},
-  KIW:{lbl:'상폐위기',em:'🚨',col:'#EF9A9A'},
+  LG:{lbl:'황제주',em:'👑',col:'#FFD700'},
+  KT:{lbl:'블루칩',em:'💙',col:'#4FC3F7'},
+  SAM:{lbl:'안정주',em:'🛡️',col:'#80DEEA'},
+  KIA:{lbl:'반등주',em:'📈',col:'#CE93D8'},
+  DOOSAN:{lbl:'급등주',em:'🚀',col:'#69F0AE'},
+  HAN:{lbl:'관망주',em:'👀',col:'#FFF176'},
+  NC:{lbl:'저평가주',em:'💡',col:'#A5D6A7'},
+  SSG:{lbl:'하락주',em:'📉',col:'#FFAB91'},
+  KIW:{lbl:'위험주',em:'⚠️',col:'#EF9A9A'},
+  LOTTE:{lbl:'상폐위기',em:'🚨',col:'#FF8A65'},
 };
 
 const VENUE_MAP={
@@ -3340,6 +3341,10 @@ ADD COLUMN IF NOT EXISTS last_bonus date;`}
               ?<span style={{color:'var(--green)'}}>🟢 Supabase 연결됨 — 실시간 순위표 활성화 상태입니다</span>
               :<span style={{color:'#FF8A9A'}}>🔴 Supabase 미연결 — 아래 단계를 따라 설정하면 모든 유저의 순위가 실시간으로 공유됩니다</span>
             }
+            <div style={{marginTop:8,fontSize:11,color:'var(--sub)',lineHeight:1.7}}>
+              ⚠️ URL/Key는 넣었지만 <strong>SQL을 아직 실행하지 않았다면</strong> "테이블을 찾을 수 없다"는 오류가 나요.
+              그 경우 가입/로그인은 자동으로 이 기기에만 저장되는 임시 모드로 전환되니, 아래 SQL을 꼭 실행해서 완전한 실시간 모드로 만들어주세요.
+            </div>
           </div>
           <div className="cwrap" style={{padding:18}}>
             <div style={{fontSize:14,fontWeight:700,marginBottom:16,color:'var(--gold)'}}>📋 Supabase 설정 가이드 (무료 · 5분)</div>
@@ -3550,6 +3555,27 @@ function App(){
   },[cash,sval,user?.n]);
 
   const getUsrs=()=>{try{return JSON.parse(localStorage.getItem('kbs_users')||'{}');}catch{return {};}};
+  const localLoginFallback=(n,p,isReg,warnMsg)=>{
+    const us=getUsrs();
+    if(isReg){
+      if(us[n]){toast2('이미 사용 중인 닉네임입니다','err');return;}
+      us[n]={pw:p,at:new Date().toISOString()};
+      localStorage.setItem('kbs_users',JSON.stringify(us));
+      setUser({n});setShowLogin(false);
+      if(warnMsg)toast2(warnMsg,'err');
+      setTimeout(()=>toast2(`${n}님 가입을 환영합니다! ⚾`),warnMsg?2600:0);
+      setTimeout(()=>setShowOnboarding(true),warnMsg?3200:600);
+      setTimeout(()=>checkBonus(n,IC,setCash,()=>setShowBonusModal(true)),warnMsg?3600:800);
+    }else{
+      if(!us[n]){toast2(warnMsg||'존재하지 않는 닉네임입니다. 가입하기를 눌러주세요','err');return;}
+      if(us[n].pw!==p){toast2('비밀번호가 틀렸습니다','err');return;}
+      setUser({n});setShowLogin(false);
+      if(warnMsg)toast2(warnMsg,'err');
+      setTimeout(()=>toast2(`${n}님 환영합니다! ⚾`),warnMsg?2600:0);
+      setTimeout(()=>checkBonus(n,cash,setCash,()=>setShowBonusModal(true)),warnMsg?3200:800);
+      setTimeout(()=>setShowStreak(true),warnMsg?4000:2000);
+    }
+  };
   const login=async(n,p,isReg)=>{
     if(USE_SB){
       try{
@@ -3567,29 +3593,19 @@ function App(){
           setTimeout(()=>checkBonus(n,u.cash||IC,setCash,()=>setShowBonusModal(true)),800);
         }
       }catch(e){
-        if(e.message.includes('duplicate')||e.message.includes('unique')){toast2('이미 사용 중인 닉네임입니다','err');}
-        else{toast2('오류가 발생했습니다: '+e.message,'err');}
+        const msg=e?.message||'';
+        const tableMissing=msg.includes('Could not find the table')||msg.includes('PGRST205')||msg.includes('does not exist')||msg.includes('schema cache');
+        if(tableMissing){
+          localLoginFallback(n,p,isReg,'⚠️ Supabase 테이블이 아직 없어 임시로 이 기기에만 저장됩니다. 관리자 패널 → DB 연동 탭에서 SQL을 실행해주세요!');
+        }else if(msg.includes('duplicate')||msg.includes('unique')){
+          toast2('이미 사용 중인 닉네임입니다','err');
+        }else{
+          toast2('오류가 발생했습니다: '+msg,'err');
+        }
       }
       return;
     }
-
-    const us=getUsrs();
-    if(isReg){
-      if(us[n]){toast2('이미 사용 중인 닉네임입니다','err');return;}
-      us[n]={pw:p,at:new Date().toISOString()};
-      localStorage.setItem('kbs_users',JSON.stringify(us));
-      setUser({n});setShowLogin(false);
-      toast2(`${n}님 가입을 환영합니다! ⚾`);
-      setTimeout(()=>setShowOnboarding(true),600);
-      setTimeout(()=>checkBonus(n,IC,setCash,()=>setShowBonusModal(true)),800);
-    }else{
-      if(!us[n]){toast2('존재하지 않는 닉네임입니다. 가입하기를 눌러주세요','err');return;}
-      if(us[n].pw!==p){toast2('비밀번호가 틀렸습니다','err');return;}
-      setUser({n});setShowLogin(false);
-      toast2(`${n}님 환영합니다! ⚾`);
-      setTimeout(()=>checkBonus(n,cash,setCash,()=>setShowBonusModal(true)),800);
-      setTimeout(()=>setShowStreak(true),2000);
-    }
+    localLoginFallback(n,p,isReg);
   };
   const logout=()=>{setUser(null);setPort({});setCash(IC);try{localStorage.removeItem('kbs_session');}catch{}};
   const openTrade=(team,mode)=>{if(!user){setShowLogin(true);return;}if(!mopen){toast2('월요일에만 거래 가능합니다','err');return;}setTrade({team,mode});};
