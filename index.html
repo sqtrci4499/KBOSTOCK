@@ -764,6 +764,25 @@ const generateAutoComments=(stockData,standingsData)=>{
   return out;
 };
 
+// ① supabase.com 에서 무료 프로젝트 생성 후 아래 두 줄 채우기
+const SB_URL = 'https://ittthptekusmpygfiznm.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0dHRocHRla3VzbXB5Z2Zpem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTU5ODIsImV4cCI6MjA5NDgzMTk4Mn0.IBxI4q9jdTcJ9Qc75cO1v2f_KM766J5ukyZLWe2UzZ0';
+const USE_SB = !!(SB_URL && SB_KEY);
+
+const sbFetch = async (path, method='GET', body=null, prefer='') => {
+  const h = {'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'};
+  if(prefer) h['Prefer']=prefer;
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`,{method,headers:h,body:body?JSON.stringify(body):null});
+  const txt = await r.text();
+  if(!r.ok) throw new Error(txt);
+  return txt?JSON.parse(txt):null;
+};
+
+const sbRegister = async (nick,pw) => sbFetch('kbs_users','POST',{nickname:nick,password:pw,cash:IC,portfolio:{},total_asset:IC,return_rate:0},'return=representation');
+const sbLogin    = async (nick,pw) => sbFetch(`kbs_users?nickname=eq.${encodeURIComponent(nick)}&password=eq.${encodeURIComponent(pw)}&select=nickname,cash,portfolio`);
+const sbSave     = async (nick,cash,port,ta,ret) => sbFetch(`kbs_users?nickname=eq.${encodeURIComponent(nick)}`,'PATCH',{cash,portfolio:port,total_asset:Math.round(ta),return_rate:parseFloat(ret.toFixed(2)),updated_at:new Date().toISOString()});
+const sbLb       = async () => sbFetch('kbs_users?select=nickname,total_asset,return_rate&order=total_asset.desc&limit=10');
+
 const BONUS = 1_000_000;
 
 const getTodayMonday = () => {
@@ -800,32 +819,12 @@ const checkBonus = async (nick, cash, setCash, showBonus) => {
 // 관리자 전체 지급 (Supabase 모드)
 const adminGiveBonus = async () => {
   if(!USE_SB) return false;
-  const monday = new Date().toISOString().split('T')[0];
   try{
     await sbFetch('kbs_users','PATCH',
       {cash: 99999999, last_bonus: null});
-
     return true;
   }catch{ return false; }
 };
-// ① supabase.com 에서 무료 프로젝트 생성 후 아래 두 줄 채우기
-const SB_URL = 'https://ittthptekusmpygfiznm.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0dHRocHRla3VzbXB5Z2Zpem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTU5ODIsImV4cCI6MjA5NDgzMTk4Mn0.IBxI4q9jdTcJ9Qc75cO1v2f_KM766J5ukyZLWe2UzZ0';
-const USE_SB = !!(SB_URL && SB_KEY);
-
-const sbFetch = async (path, method='GET', body=null, prefer='') => {
-  const h = {'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'};
-  if(prefer) h['Prefer']=prefer;
-  const r = await fetch(`${SB_URL}/rest/v1/${path}`,{method,headers:h,body:body?JSON.stringify(body):null});
-  const txt = await r.text();
-  if(!r.ok) throw new Error(txt);
-  return txt?JSON.parse(txt):null;
-};
-
-const sbRegister = async (nick,pw) => sbFetch('kbs_users','POST',{nickname:nick,password:pw,cash:IC,portfolio:{},total_asset:IC,return_rate:0},'return=representation');
-const sbLogin    = async (nick,pw) => sbFetch(`kbs_users?nickname=eq.${encodeURIComponent(nick)}&password=eq.${encodeURIComponent(pw)}&select=nickname,cash,portfolio`);
-const sbSave     = async (nick,cash,port,ta,ret) => sbFetch(`kbs_users?nickname=eq.${encodeURIComponent(nick)}`,'PATCH',{cash,portfolio:port,total_asset:Math.round(ta),return_rate:parseFloat(ret.toFixed(2)),updated_at:new Date().toISOString()});
-const sbLb       = async () => sbFetch('kbs_users?select=nickname,total_asset,return_rate&order=total_asset.desc&limit=10');
 (()=>{try{if(localStorage.getItem('kbs_ver')!==VER){['kbs_stk','kbs_hist','kbs_snd','kbs_sch','kbs_ach'].forEach(k=>localStorage.removeItem(k));localStorage.setItem('kbs_ver',VER);}}catch{}})();
 
 const TEAMS=[
@@ -3775,8 +3774,6 @@ const exportCSV=(transactions,nick)=>{
         {tab==='txs'&&<TradeHistoryPage transactions={transactions} user={user} stocks={stocks} onExport={()=>exportCSV(transactions,user?.n||'user')}/>}
         {tab==='board'&&<BoardPage user={user} board={board} onPost={postToBoard} onDelete={deletePost} onPin={pinPost} onLike={likePost}/>}
         {tab==='ach'&&<AchievementsPage achievements={achievements}/>}
-        </div>
-<AchievementsPage achievements={achievements}/>}
         {tab==='admin'&&<AdminPage stocks={stocks} onUpdate={updateStock} mopen={mopen} onToggle={()=>setMopen(m=>!m)} schedule={schedule} onAddGame={addGame} onDelGame={delGame} comments={comments} onSaveComment={saveComment} standings={standings} onUpdateStandings={updateStandings} lbData={lbData} onUpdateLb={setLbData} announcements={announcements} onAddAnn={addAnnouncement} onDeleteAnn={deleteAnn} weeklyReport={weeklyReport} onSaveReport={r=>{setWeeklyReport(r);toast2('주간 리포트 저장 ✅');}} onCheckPreds={checkPredictions} quote={quote} onSetQuote={setQuote} onResetSeason={()=>{if(!confirm('시즌을 결산하고 리셋합니까? 모든 포트폴리오가 초기화됩니다.'))return;['kbs_stk','kbs_hist','kbs_ah'].forEach(k=>localStorage.removeItem(k));Object.keys(localStorage).filter(k=>k.startsWith('kbs_u_')).forEach(k=>localStorage.removeItem(k));localStorage.setItem('kbs_ver','v'+Date.now());toast2('시즌 결산 완료! 페이지를 새로고침해주세요 🏆');}}/>}
       </div>
       {showLogin&&<LoginModal onClose={()=>setShowLogin(false)} onLogin={login}/>}
